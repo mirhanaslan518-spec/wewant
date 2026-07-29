@@ -1,0 +1,31 @@
+{
+  "expo": {
+    "name": "WeWant",
+    "slug": "wewant-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "plugins": [
+      "expo-notifications"
+    ],
+    "splashScreen": {
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.wewant.app"
+    },
+    "android": {
+      "package": "com.wewant.app"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "50b95197-d09c-479a-b2b9-b3666ef7e2f0"
+      }
+    },
+    "owner": "mirhanaslan"
+  }
+}
