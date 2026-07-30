@@ -1,0 +1,19 @@
+name: Supabase Keepalive
+
+on:
+  schedule:
+    # Her 3 günde bir çalışır (Supabase 7 gün hareketsizlikte projeyi durduruyor,
+    # 3 günlük aralık güvenli bir pay bırakıyor).
+    - cron: '0 8 */3 * *'
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Supabase'e istek gönder
+        run: |
+          curl -s -o /dev/null -w "HTTP durum kodu: %{http_code}\n" \
+            "https://mviagfelozflanfxtlcl.supabase.co/rest/v1/profiles?select=id&limit=1" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}"
