@@ -1,0 +1,55 @@
+// GÜL - 6. gün: üçüncü yaprak, en büyük tomurcuk, hafif eğim başlıyor
+const phase6 = {
+  left: 156,
+  width: 8,
+  height: 140,
+  radius: 4,
+  rotate: -2,
+  color: "#4CAF50",
+  grayColor: "#9a9a9a",
+  children: [
+    {
+      top: 36,
+      left: -40,
+      width: 44,
+      height: 22,
+      topLeftRadius: 22,
+      bottomRightRadius: 22,
+      rotate: -20,
+      color: "#4CAF50",
+      grayColor: "#9a9a9a",
+    },
+    {
+      top: 72,
+      left: 6,
+      width: 44,
+      height: 22,
+      topRightRadius: 22,
+      bottomLeftRadius: 22,
+      rotate: 25,
+      color: "#4CAF50",
+      grayColor: "#9a9a9a",
+    },
+    {
+      top: 100,
+      left: -30,
+      width: 30,
+      height: 15,
+      topLeftRadius: 22,
+      bottomRightRadius: 22,
+      rotate: -20,
+      color: "#4CAF50",
+      grayColor: "#9a9a9a",
+    },
+    {
+      top: -50,
+      left: -12,
+      width: 32,
+      height: 58,
+      radius: 16,
+      grayColor: "#a8a8a8",
+    },
+  ],
+};
+
+export default phase6;
