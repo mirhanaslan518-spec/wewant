@@ -1,20 +1,31 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 
 import { supabase } from './lib/supabase';
+import { ThemeProvider, useTheme } from './lib/theme';
 import { registerForPushNotifications } from './lib/notifications';
 import AuthScreen from './screens/AuthScreen';
 import HomeScreen from './screens/HomeScreen';
-import ProfileScreen from './screens/ProfileScreen';
+import FlowerScreen from './screens/FlowerScreen';
 import PartnerScreen from './screens/PartnerScreen';
 import SettingsScreen from './screens/SettingsScreen';
 
 const Tab = createBottomTabNavigator();
 
-export default function App() {
+const ICONS = {
+  Kalp: 'heart',
+  Partnerim: 'sparkles',
+  Çiçek: 'flower',
+  Ayarlar: 'settings',
+};
+
+function AppShell() {
+  const { scheme, colors } = useTheme();
   const [session, setSession] = useState(null);
   const [checkingSession, setCheckingSession] = useState(true);
 
@@ -38,27 +49,67 @@ export default function App() {
   }, [session]);
 
   if (checkingSession) {
+    return <View style={{ flex: 1, backgroundColor: colors.background }} />;
+  }
+
+  const navTheme = {
+    ...(scheme === 'dark' ? DarkTheme : DefaultTheme),
+    colors: {
+      ...(scheme === 'dark' ? DarkTheme.colors : DefaultTheme.colors),
+      background: colors.background,
+      card: colors.surface,
+      border: colors.border,
+      text: colors.textPrimary,
+      primary: colors.accent,
+    },
+  };
+
+  if (!session) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#e0245e" />
-      </View>
+      <>
+        <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+        <AuthScreen />
+      </>
     );
   }
 
-  if (!session) {
-    return <AuthScreen />;
-  }
-
   return (
-    <NavigationContainer>
-      <StatusBar style="auto" />
-      <Tab.Navigator screenOptions={{ headerShown: false }}>
-        <Tab.Screen name="Ana Sayfa" component={HomeScreen} />
-        <Tab.Screen name="Profilim" component={ProfileScreen} />
+    <NavigationContainer theme={navTheme}>
+      <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+      <Tab.Navigator
+        screenOptions={({ route }) => ({
+          headerShown: false,
+          tabBarActiveTintColor: colors.accent,
+          tabBarInactiveTintColor: colors.textSecondary,
+          tabBarStyle: {
+            backgroundColor: colors.surface,
+            borderTopColor: colors.border,
+            borderTopWidth: 1,
+          },
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons
+              name={focused ? ICONS[route.name] : `${ICONS[route.name]}-outline`}
+              size={size}
+              color={color}
+            />
+          ),
+        })}
+      >
+        <Tab.Screen name="Kalp" component={HomeScreen} />
         <Tab.Screen name="Partnerim" component={PartnerScreen} />
+        <Tab.Screen name="Çiçek" component={FlowerScreen} />
         <Tab.Screen name="Ayarlar" component={SettingsScreen} />
       </Tab.Navigator>
     </NavigationContainer>
   );
 }
-//this is a comment
+
+export default function App() {
+  return (
+    <SafeAreaProvider>
+      <ThemeProvider>
+        <AppShell />
+      </ThemeProvider>
+    </SafeAreaProvider>
+  );
+}
