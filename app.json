@@ -5,11 +5,13 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
-    "plugins": ["expo-notifications", "expo-apple-authentication"],
-    "splashScreen": {
+    "scheme": "wewant",
+    "splash": {
       "backgroundColor": "#ffffff"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.wewant.app"
@@ -17,12 +19,6 @@
     "android": {
       "package": "com.wewant.app"
     },
-    "extra": {
-      "eas": {
-        "projectId": "50b95197-d09c-479a-b2b9-b3666ef7e2f0"
-      }
-    },
-    "owner": "mirhanaslan",
-    "scheme": "wewant"
+    "plugins": ["expo-notifications"]
   }
 }
