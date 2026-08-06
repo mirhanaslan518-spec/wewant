@@ -3,10 +3,15 @@ import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   Alert, ActivityIndicator, RefreshControl, ScrollView, Share,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Clipboard from 'expo-clipboard';
 import { supabase } from '../lib/supabase';
+import { useTheme } from '../lib/theme';
+import Skeleton from '../components/Skeleton';
 
 export default function ProfileScreen() {
+  const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [pairingCode, setPairingCode] = useState('');
@@ -16,6 +21,7 @@ export default function ProfileScreen() {
   const [displayName, setDisplayName] = useState('');
   const [nameInput, setNameInput] = useState('');
   const [savingName, setSavingName] = useState(false);
+  const [justCopied, setJustCopied] = useState(false);
 
   const loadProfile = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -68,16 +74,15 @@ export default function ProfileScreen() {
 
   const handleCopyCode = async () => {
     await Clipboard.setStringAsync(pairingCode);
-    Alert.alert('Kopyalandı', 'Eşleşme kodu panoya kopyalandı.');
+    setJustCopied(true);
+    setTimeout(() => setJustCopied(false), 5000);
   };
 
   const handleShareCode = async () => {
     try {
-      await Share.share({
-        message: `WeWant'te eşleşmek için kodum: ${pairingCode}`,
-      });
+      await Share.share({ message: `WeWant'te eşleşmek için kodum: ${pairingCode}` });
     } catch (e) {
-      // kullanıcı paylaşımı iptal etti, bir şey yapmaya gerek yok
+      // kullanıcı iptal etti
     }
   };
 
@@ -128,18 +133,23 @@ export default function ProfileScreen() {
     await supabase.auth.signOut();
   };
 
+  const styles = createStyles(colors);
+
   if (loading) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#e0245e" />
-      </View>
+      <ScrollView contentContainerStyle={[styles.container, { paddingTop: insets.top + 16 }]}>
+        <Text style={styles.title}>Profilim</Text>
+        <Skeleton height={100} borderRadius={14} style={{ marginBottom: 16 }} />
+        <Skeleton height={110} borderRadius={14} style={{ marginBottom: 16 }} />
+        <Skeleton height={90} borderRadius={14} />
+      </ScrollView>
     );
   }
 
   return (
     <ScrollView
-      contentContainerStyle={styles.container}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      contentContainerStyle={[styles.container, { paddingTop: insets.top + 16 }]}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
     >
       <Text style={styles.title}>Profilim</Text>
 
@@ -148,6 +158,7 @@ export default function ProfileScreen() {
         <TextInput
           style={styles.input}
           placeholder="İsmini gir"
+          placeholderTextColor={colors.textSecondary}
           value={nameInput}
           onChangeText={setNameInput}
         />
@@ -162,8 +173,13 @@ export default function ProfileScreen() {
         <Text style={styles.label}>Senin eşleşme kodun</Text>
         <Text style={styles.code}>{pairingCode}</Text>
         <View style={styles.row}>
-          <TouchableOpacity style={styles.smallButton} onPress={handleCopyCode}>
-            <Text style={styles.smallButtonText}>Kopyala</Text>
+          <TouchableOpacity
+            style={[styles.smallButton, justCopied && styles.smallButtonSuccess]}
+            onPress={handleCopyCode}
+          >
+            <Text style={[styles.smallButtonText, justCopied && styles.smallButtonTextSuccess]}>
+              {justCopied ? 'Kopyalandı ✓' : 'Kopyala'}
+            </Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.smallButton} onPress={handleShareCode}>
             <Text style={styles.smallButtonText}>Paylaş</Text>
@@ -185,6 +201,7 @@ export default function ProfileScreen() {
           <TextInput
             style={styles.input}
             placeholder="Örn: A3F9K2"
+            placeholderTextColor={colors.textSecondary}
             autoCapitalize="characters"
             value={partnerCodeInput}
             onChangeText={setPartnerCodeInput}
@@ -202,29 +219,33 @@ export default function ProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { padding: 24, backgroundColor: '#fff', flexGrow: 1 },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  title: { fontSize: 26, fontWeight: 'bold', marginBottom: 20 },
-  card: {
-    backgroundColor: '#faf5f6', borderRadius: 14, padding: 18, marginBottom: 16,
-  },
-  label: { fontSize: 13, color: '#888', marginBottom: 6 },
-  code: { fontSize: 32, fontWeight: 'bold', letterSpacing: 4, color: '#e0245e' },
-  pairedText: { fontSize: 16, color: '#2e8b57', fontWeight: '600', marginBottom: 12 },
-  input: {
-    borderWidth: 1, borderColor: '#ddd', borderRadius: 10,
-    padding: 14, marginBottom: 12, fontSize: 16, backgroundColor: '#fff',
-  },
-  button: { backgroundColor: '#e0245e', borderRadius: 10, padding: 14, alignItems: 'center' },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
-  row: { flexDirection: 'row', marginTop: 12, gap: 10 },
-  smallButton: {
-    borderWidth: 1, borderColor: '#e0245e', borderRadius: 8,
-    paddingVertical: 8, paddingHorizontal: 16,
-  },
-  smallButtonText: { color: '#e0245e', fontWeight: '600' },
-  dangerButton: { borderRadius: 10, padding: 12, alignItems: 'center', borderWidth: 1, borderColor: '#e0245e' },
-  dangerButtonText: { color: '#e0245e', fontWeight: '600' },
-  signOutText: { textAlign: 'center', color: '#999' },
-});
+function createStyles(colors) {
+  return StyleSheet.create({
+    container: { padding: 24, backgroundColor: colors.background, flexGrow: 1 },
+    title: { fontSize: 26, fontWeight: '700', marginBottom: 20, color: colors.textPrimary },
+    card: {
+      backgroundColor: colors.surface, borderRadius: 16, padding: 18, marginBottom: 16,
+      borderWidth: 1, borderColor: colors.border,
+    },
+    label: { fontSize: 13, color: colors.textSecondary, marginBottom: 6 },
+    code: { fontSize: 32, fontWeight: '700', letterSpacing: 4, color: colors.accent },
+    pairedText: { fontSize: 16, color: colors.success, fontWeight: '600', marginBottom: 12 },
+    input: {
+      borderWidth: 1, borderColor: colors.border, borderRadius: 12,
+      padding: 14, marginBottom: 12, fontSize: 16, color: colors.textPrimary, backgroundColor: colors.background,
+    },
+    button: { backgroundColor: colors.accent, borderRadius: 12, padding: 14, alignItems: 'center' },
+    buttonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+    row: { flexDirection: 'row', marginTop: 12, gap: 10 },
+    smallButton: {
+      borderWidth: 1, borderColor: colors.accent, borderRadius: 10,
+      paddingVertical: 9, paddingHorizontal: 16,
+    },
+    smallButtonSuccess: { borderColor: colors.success, backgroundColor: colors.successMuted },
+    smallButtonText: { color: colors.accent, fontWeight: '600' },
+    smallButtonTextSuccess: { color: colors.success },
+    dangerButton: { borderRadius: 12, padding: 12, alignItems: 'center', borderWidth: 1, borderColor: colors.accent },
+    dangerButtonText: { color: colors.accent, fontWeight: '600' },
+    signOutText: { textAlign: 'center', color: colors.textSecondary },
+  });
+}
