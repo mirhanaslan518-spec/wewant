@@ -4,7 +4,7 @@ import { WebView } from 'react-native-webview';
 
 // GitHub Pages'te yayınladığın captcha.html'in gerçek adresi.
 // <kullanici-adin> ve <repo-adin> kısımlarını kendi bilgilerinle değiştir.
-const CAPTCHA_PAGE_URL = 'https://<kullanici-adin>.github.io/<repo-adin>/captcha.html';
+const CAPTCHA_PAGE_URL = 'https://mirhanaslan518-spec.github.io/wewant/';
 
 const CaptchaWidget = forwardRef(function CaptchaWidget({ onVerify, onExpire }, ref) {
   const webviewRef = useRef(null);
