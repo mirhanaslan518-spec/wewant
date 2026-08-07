@@ -7,9 +7,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../lib/supabase';
 import { useTheme } from '../lib/theme';
 import { signInWithGoogle } from '../lib/googleAuth';
-import CaptchaWidget from '../components/CaptchaWidget';
+import { runCaptcha } from '../lib/captcha';
 
-const LOADING_MESSAGES = ['Hazırlanıyor...', 'Bağlanılıyor...', 'Neredeyse hazır...'];
+const LOADING_MESSAGES = ['Doğrulanıyor...', 'Hazırlanıyor...', 'Bağlanılıyor...', 'Neredeyse hazır...'];
 
 export default function AuthScreen() {
   const { colors } = useTheme();
@@ -23,9 +23,7 @@ export default function AuthScreen() {
   const [loadingMsgIndex, setLoadingMsgIndex] = useState(0);
   const [errorMsg, setErrorMsg] = useState(null);
   const [infoMsg, setInfoMsg] = useState(null);
-  const [captchaToken, setCaptchaToken] = useState(null);
   const intervalRef = useRef(null);
-  const captchaRef = useRef(null);
 
   useEffect(() => {
     if (loading) {
@@ -51,12 +49,16 @@ export default function AuthScreen() {
       setErrorMsg('İsim gerekli.');
       return;
     }
+
+    setLoading(true);
+
+    const captchaToken = await runCaptcha();
     if (!captchaToken) {
-      setErrorMsg('Lütfen robot olmadığını doğrula.');
+      setLoading(false);
+      setErrorMsg('Doğrulama tamamlanmadı, tekrar dene.');
       return;
     }
 
-    setLoading(true);
     const { error } = isSignUp
       ? await supabase.auth.signUp({
           email,
@@ -65,9 +67,6 @@ export default function AuthScreen() {
         })
       : await supabase.auth.signInWithPassword({ email, password, options: { captchaToken } });
     setLoading(false);
-
-    setCaptchaToken(null);
-    captchaRef.current?.reset();
 
     if (error) {
       setErrorMsg(translateAuthError(error.message));
@@ -136,12 +135,6 @@ export default function AuthScreen() {
           secureTextEntry
           value={password}
           onChangeText={setPassword}
-        />
-
-        <CaptchaWidget
-          ref={captchaRef}
-          onVerify={setCaptchaToken}
-          onExpire={() => setCaptchaToken(null)}
         />
 
         {errorMsg && (
