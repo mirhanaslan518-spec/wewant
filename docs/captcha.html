@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+  <style>
+    html, body { margin:0; padding:0; height:100%; background:#0C0C0E; }
+    body {
+      display:flex; flex-direction:column; justify-content:center; align-items:center;
+      font-family:-apple-system, sans-serif; color:#F2F0F1; gap:20px;
+    }
+    button {
+      display:none; padding:14px 28px; font-size:16px; font-weight:700;
+      background:#EC4899; color:#fff; border:none; border-radius:12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="cf-turnstile" data-sitekey="0x4AAAAAAEHsHJmkyCGhuPCZ" data-callback="onVerify"></div>
+  <button id="continueBtn" onclick="goBack()">Devam Et</button>
+  <script>
+    let verifiedToken = null;
+
+    function getParam(name) {
+      const params = new URLSearchParams(window.location.search);
+      return params.get(name);
+    }
+
+    function onVerify(token) {
+      verifiedToken = token;
+      document.getElementById('continueBtn').style.display = 'block';
+    }
+
+    function goBack() {
+      if (!verifiedToken) return;
+      const redirect = getParam('redirect');
+      if (!redirect) return;
+      const sep = redirect.indexOf('?') !== -1 ? '&' : '?';
+      window.location.href = redirect + sep + 'token=' + encodeURIComponent(verifiedToken);
+    }
+  </script>
+</body>
+</html>
