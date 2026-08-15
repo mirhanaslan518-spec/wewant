@@ -19,6 +19,17 @@
     "android": {
       "package": "com.wewant.app"
     },
-    "plugins": ["expo-notifications"]
+    "plugins": [
+      "expo-notifications",
+      "expo-web-browser",
+      [
+        "@sentry/react-native/expo",
+        {
+          "url": "https://sentry.io/",
+          "project": "javascript-react",
+          "organization": "wewant"
+        }
+      ]
+    ]
   }
 }
