@@ -7,7 +7,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../lib/supabase';
 import { useTheme } from '../lib/theme';
 import { signInWithGoogle } from '../lib/googleAuth';
-import { runCaptcha } from '../lib/captcha';
 
 const LOADING_MESSAGES = ['Hazırlanıyor...', 'Bağlanılıyor...', 'Neredeyse hazır...'];
 
@@ -52,21 +51,11 @@ export default function AuthScreen() {
 
     setLoading(true);
 
-    let captchaToken;
-    if (isSignUp) {
-      captchaToken = await runCaptcha();
-      if (!captchaToken) {
-        setLoading(false);
-        setErrorMsg('Doğrulama tamamlanmadı, tekrar dene.');
-        return;
-      }
-    }
-
     const { error } = isSignUp
       ? await supabase.auth.signUp({
           email,
           password,
-          options: { data: { display_name: name.trim() }, captchaToken },
+          options: { data: { display_name: name.trim() } },
         })
       : await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
@@ -119,6 +108,7 @@ export default function AuthScreen() {
             placeholderTextColor={colors.textSecondary}
             value={name}
             onChangeText={setName}
+            maxLength={30}
           />
         )}
 
@@ -130,6 +120,7 @@ export default function AuthScreen() {
           keyboardType="email-address"
           value={email}
           onChangeText={setEmail}
+          maxLength={100}
         />
         <TextInput
           style={styles.input}
@@ -138,6 +129,7 @@ export default function AuthScreen() {
           secureTextEntry
           value={password}
           onChangeText={setPassword}
+          maxLength={72}
         />
 
         {errorMsg && (
@@ -176,7 +168,6 @@ function translateAuthError(message) {
   if (message.includes('Invalid login credentials')) return 'E-posta veya şifre hatalı.';
   if (message.includes('User already registered')) return 'Bu e-posta zaten kayıtlı, giriş yapmayı dene.';
   if (message.includes('Password should be')) return 'Şifre en az 6 karakter olmalı.';
-  if (message.toLowerCase().includes('captcha')) return 'Doğrulama başarısız, tekrar dene.';
   return message;
 }
 
