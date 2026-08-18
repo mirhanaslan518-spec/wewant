@@ -1,12 +1,17 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator,
-  KeyboardAvoidingView, ScrollView, Platform,
+  KeyboardAvoidingView, ScrollView, Platform, Linking,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
 import { useTheme } from '../lib/theme';
 import { signInWithGoogle } from '../lib/googleAuth';
+import { requestPasswordReset } from '../lib/passwordReset';
+
+const PRIVACY_URL = 'https://mirhanaslan518-spec.github.io/wewant/privacy.html';
+const TERMS_URL = 'https://mirhanaslan518-spec.github.io/wewant/terms.html';
 
 const LOADING_MESSAGES = ['Hazırlanıyor...', 'Bağlanılıyor...', 'Neredeyse hazır...'];
 
@@ -22,6 +27,10 @@ export default function AuthScreen() {
   const [loadingMsgIndex, setLoadingMsgIndex] = useState(0);
   const [errorMsg, setErrorMsg] = useState(null);
   const [infoMsg, setInfoMsg] = useState(null);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
   const intervalRef = useRef(null);
 
   useEffect(() => {
@@ -48,6 +57,10 @@ export default function AuthScreen() {
       setErrorMsg('İsim gerekli.');
       return;
     }
+    if (isSignUp && !agreedToTerms) {
+      setErrorMsg('Devam etmek için Gizlilik Politikası ve Kullanım Şartlarını kabul etmelisin.');
+      return;
+    }
 
     setLoading(true);
 
@@ -71,13 +84,88 @@ export default function AuthScreen() {
 
   const handleGooglePress = async () => {
     setErrorMsg(null);
+    if (isSignUp && !agreedToTerms) {
+      setErrorMsg('Devam etmek için Gizlilik Politikası ve Kullanım Şartlarını kabul etmelisin.');
+      return;
+    }
     setOauthLoading(true);
     const { error } = await signInWithGoogle();
     setOauthLoading(false);
     if (error) setErrorMsg(error);
   };
 
+  const handleResetRequest = async () => {
+    setErrorMsg(null);
+    setInfoMsg(null);
+
+    if (!resetEmail) {
+      setErrorMsg('E-posta gerekli.');
+      return;
+    }
+
+    setResetLoading(true);
+    const { error } = await requestPasswordReset(resetEmail);
+    setResetLoading(false);
+
+    if (error) {
+      setErrorMsg(error);
+      return;
+    }
+    setInfoMsg('Sıfırlama bağlantısını e-postana gönderdik. Gelen kutunu kontrol et.');
+  };
+
   const styles = createStyles(colors);
+
+  if (showForgotPassword) {
+    return (
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={{ flex: 1, backgroundColor: colors.background }}
+      >
+        <ScrollView
+          contentContainerStyle={[styles.container, { paddingTop: insets.top + 32 }]}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Text style={styles.title}>Şifreni Sıfırla</Text>
+          <Text style={styles.subtitle}>E-postana bir sıfırlama bağlantısı gönderelim.</Text>
+
+          <TextInput
+            style={styles.input}
+            placeholder="E-posta"
+            placeholderTextColor={colors.textSecondary}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            value={resetEmail}
+            onChangeText={setResetEmail}
+            maxLength={100}
+          />
+
+          {errorMsg && (
+            <View style={styles.errorBox}>
+              <Text style={styles.errorText}>{errorMsg}</Text>
+            </View>
+          )}
+          {infoMsg && (
+            <View style={styles.infoBox}>
+              <Text style={styles.infoText}>{infoMsg}</Text>
+            </View>
+          )}
+
+          <TouchableOpacity style={styles.button} onPress={handleResetRequest} disabled={resetLoading}>
+            {resetLoading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.buttonText}>Sıfırlama Bağlantısı Gönder</Text>
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={() => { setShowForgotPassword(false); setErrorMsg(null); setInfoMsg(null); }}>
+            <Text style={styles.switchText}>Girişe geri dön</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    );
+  }
 
   return (
     <KeyboardAvoidingView
@@ -132,6 +220,24 @@ export default function AuthScreen() {
           maxLength={72}
         />
 
+        {isSignUp && (
+          <TouchableOpacity
+            style={styles.consentRow}
+            onPress={() => setAgreedToTerms((v) => !v)}
+            activeOpacity={0.8}
+          >
+            <View style={[styles.checkbox, agreedToTerms && { backgroundColor: colors.accent, borderColor: colors.accent }]}>
+              {agreedToTerms && <Ionicons name="checkmark" size={14} color="#fff" />}
+            </View>
+            <Text style={styles.consentText}>
+              <Text onPress={() => Linking.openURL(PRIVACY_URL)} style={styles.consentLink}>Gizlilik Politikası</Text>
+              {' '}ve{' '}
+              <Text onPress={() => Linking.openURL(TERMS_URL)} style={styles.consentLink}>Kullanım Şartlarını</Text>
+              {' '}okudum, kabul ediyorum.
+            </Text>
+          </TouchableOpacity>
+        )}
+
         {errorMsg && (
           <View style={styles.errorBox}>
             <Text style={styles.errorText}>{errorMsg}</Text>
@@ -143,7 +249,11 @@ export default function AuthScreen() {
           </View>
         )}
 
-        <TouchableOpacity style={styles.button} onPress={handleSubmit} disabled={loading}>
+        <TouchableOpacity
+          style={[styles.button, isSignUp && !agreedToTerms && { opacity: 0.5 }]}
+          onPress={handleSubmit}
+          disabled={loading || (isSignUp && !agreedToTerms)}
+        >
           {loading ? (
             <View style={styles.loadingRow}>
               <ActivityIndicator color={colors.background} size="small" />
@@ -159,6 +269,12 @@ export default function AuthScreen() {
             {isSignUp ? 'Zaten hesabın var mı? Giriş yap' : 'Hesabın yok mu? Kayıt ol'}
           </Text>
         </TouchableOpacity>
+
+        {!isSignUp && (
+          <TouchableOpacity onPress={() => { setShowForgotPassword(true); setResetEmail(email); setErrorMsg(null); setInfoMsg(null); }}>
+            <Text style={styles.forgotText}>Şifremi unuttum?</Text>
+          </TouchableOpacity>
+        )}
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -204,5 +320,13 @@ function createStyles(colors) {
     loadingRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
     loadingText: { color: colors.background, fontSize: 14, fontWeight: '600' },
     switchText: { textAlign: 'center', marginTop: 22, color: colors.accent, fontSize: 13 },
+    forgotText: { textAlign: 'center', marginTop: 14, color: colors.textSecondary, fontSize: 13 },
+    consentRow: { flexDirection: 'row', alignItems: 'flex-start', marginTop: 4, marginBottom: 4, gap: 10 },
+    checkbox: {
+      width: 20, height: 20, borderRadius: 5, borderWidth: 1.5, borderColor: colors.border,
+      justifyContent: 'center', alignItems: 'center', marginTop: 1,
+    },
+    consentText: { flex: 1, fontSize: 13, color: colors.textSecondary, lineHeight: 18 },
+    consentLink: { color: colors.accent, fontWeight: '600' },
   });
 }
