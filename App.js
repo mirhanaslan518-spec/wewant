@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View } from 'react-native';
+import { View, Linking } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -12,6 +12,7 @@ import { supabase } from './lib/supabase';
 import { ThemeProvider, useTheme } from './lib/theme';
 import { registerForPushNotifications } from './lib/notifications';
 import AuthScreen from './screens/AuthScreen';
+import ResetPasswordScreen from './screens/ResetPasswordScreen';
 import HomeScreen from './screens/HomeScreen';
 import FlowerScreen from './screens/FlowerScreen';
 import PartnerScreen from './screens/PartnerScreen';
@@ -71,6 +72,7 @@ function AppShell() {
   const { scheme, colors } = useTheme();
   const [session, setSession] = useState(null);
   const [checkingSession, setCheckingSession] = useState(true);
+  const [showResetPassword, setShowResetPassword] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -80,9 +82,50 @@ function AppShell() {
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
+      if (_event === 'PASSWORD_RECOVERY') {
+        setShowResetPassword(true);
+      }
     });
 
     return () => listener.subscription.unsubscribe();
+  }, []);
+
+  // E-postadaki şifre sıfırlama linkine tıklanınca uygulama bu şekilde açılır.
+  useEffect(() => {
+    const extractParam = (url, name) => {
+      const re = new RegExp(`[?&#]${name}=([^&]+)`);
+      const match = url.match(re);
+      return match ? decodeURIComponent(match[1]) : null;
+    };
+
+    const handleUrl = async (url) => {
+      if (!url) return;
+
+      // Şifre sıfırlama linki: access_token + refresh_token doğrudan geliyor
+      const accessToken = extractParam(url, 'access_token');
+      const refreshToken = extractParam(url, 'refresh_token');
+      const type = extractParam(url, 'type');
+
+      if (accessToken && refreshToken && type === 'recovery') {
+        const { error } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
+        if (!error) setShowResetPassword(true);
+        return;
+      }
+
+      // Google girişi gibi diğer akışlar: code= ile geliyor
+      const code = extractParam(url, 'code');
+      if (code) {
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        if (!error && type === 'recovery') setShowResetPassword(true);
+      }
+    };
+
+    Linking.getInitialURL().then(handleUrl);
+    const subscription = Linking.addEventListener('url', ({ url }) => handleUrl(url));
+    return () => subscription.remove();
   }, []);
 
   useEffect(() => {
@@ -106,6 +149,16 @@ function AppShell() {
       primary: colors.accent,
     },
   };
+
+  if (showResetPassword) {
+    return (
+      <>
+        <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+        <NetworkBanner />
+        <ResetPasswordScreen onDone={() => setShowResetPassword(false)} />
+      </>
+    );
+  }
 
   if (!session) {
     return (
