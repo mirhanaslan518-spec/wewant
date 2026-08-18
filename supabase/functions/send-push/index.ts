@@ -1,10 +1,21 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
+// Bu değer, SQL'deki trigger_push() fonksiyonunda gönderilen değerle
+// birebir aynı olmalı. Ortam değişkeni olarak ayarlanıyor
+// (npx supabase secrets set WEBHOOK_SECRET=...).
+const WEBHOOK_SECRET = Deno.env.get("WEBHOOK_SECRET")
+
 serve(async (req) => {
   try {
+    const incomingSecret = req.headers.get("x-webhook-secret")
+    if (!WEBHOOK_SECRET || incomingSecret !== WEBHOOK_SECRET) {
+      return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401 })
+    }
+
     const payload = await req.json()
     const receiverId = payload.record?.receiver_id
+    const notificationBody = payload.record?.notification_body || "Seni düşünüyor"
 
     if (!receiverId) {
       return new Response(JSON.stringify({ error: "no receiver_id" }), { status: 400 })
@@ -34,7 +45,7 @@ serve(async (req) => {
         to: profile.expo_push_token,
         sound: "default",
         title: "",
-        body: "Seni düşünüyor",
+        body: notificationBody,
       }),
     })
 
