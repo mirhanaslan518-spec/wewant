@@ -18,15 +18,33 @@ function getVariant(key) {
 // stage: 0 (sadece saksı) , 1-7 (o günün ağacı)
 // gray: solmuş/eşleşme yok hali
 // variant: 'rose' | 'daisy' | 'sunflower'
-export default function FlowerStage({ stage, gray, accentColor, variant = "rose" }) {
+export default function FlowerStage({
+  stage,
+  gray,
+  accentColor,
+  variant = "rose",
+}) {
   const v = getVariant(variant);
   const phaseNode = stage >= 1 ? v.phases[Math.min(stage, 7)] : null;
 
   return (
-    <View style={{ width: 320, height: 440, alignItems: "center", justifyContent: "flex-end" }}>
+    <View
+      style={{
+        width: 320,
+        height: 440,
+        alignItems: "center",
+        justifyContent: "flex-end",
+      }}
+    >
       <View style={{ width: 320, height: 330 }}>
         {phaseNode && (
-          <View style={{ position: "absolute", bottom: 0, left: phaseNode.left ?? 130 }}>
+          <View
+            style={{
+              position: "absolute",
+              bottom: 0,
+              left: phaseNode.left ?? 130,
+            }}
+          >
             {renderNode(phaseNode, accentColor, gray)}
           </View>
         )}
